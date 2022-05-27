@@ -30,6 +30,7 @@ class ChatPageState extends State<ChatPage> {
 
   @override
   void initState() {
+    localName = "";
     connected = false;
     msgtext.text = "";
     channelconnect();
@@ -55,19 +56,25 @@ class ChatPageState extends State<ChatPage> {
                   case MessageType.message:
                     var messageData = MessageModel.fromJson(jsondata);
                     msglist.addAll(messageData.data);
+
+                    scollController.animateTo(
+                        scollController.position.maxScrollExtent + 100,
+                        duration: const Duration(seconds: 1),
+                        curve: Curves.ease);
                     break;
                   case MessageType.history:
                     var messageData = MessageModel.fromJson(jsondata);
                     msglist.addAll(messageData.data);
+
+                    scollController.animateTo(
+                        scollController.position.maxScrollExtent,
+                        duration: const Duration(seconds: 1),
+                        curve: Curves.ease);
                     break;
                   case MessageType.color:
                     localColor = (jsondata['data'] as String).convertToColor();
                     break;
                 }
-
-                setState(() {
-                  //update UI after adding data to message model
-                });
               });
             }
           });
@@ -90,10 +97,6 @@ class ChatPageState extends State<ChatPage> {
   Future<void> sendmsg(String sendmsg) async {
     if (connected == true) {
       String msg = "$sendmsg";
-      // setState(() {
-      //    msgtext.text = "";
-      //    msglist.add(MessageData(msgtext: sendmsg, userid: myid, isme: true));
-      // });
       channel.sink.add(msg); //send message to reciever channel
     } else {
       channelconnect();
@@ -101,6 +104,7 @@ class ChatPageState extends State<ChatPage> {
     }
   }
 
+  var scollController = ScrollController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,52 +126,53 @@ class ChatPageState extends State<ChatPage> {
                 child: Container(
                     padding: const EdgeInsets.all(15),
                     child: SingleChildScrollView(
+                        controller: scollController,
                         child: Column(
-                      children: [
-                        Container(
-                          child: const Text("Your Messages",
-                              style: const TextStyle(fontSize: 20)),
-                        ),
-                        Column(
-                          children: msglist.map((onemsg) {
-                            return Container(
-                                margin: EdgeInsets.only(
-                                  //if is my message, then it has margin 40 at left
-                                  left: onemsg.name == localName ? 40 : 0,
-                                  right: onemsg.name == localName
-                                      ? 0
-                                      : 40, //else margin at right
-                                ),
-                                child: Card(
-                                    color: onemsg.name == localName
-                                        ? Colors.blue[100]
-                                        : Colors.red[100],
-                                    //if its my message then, blue background else red background
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(15),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(onemsg.name == localName
-                                              ? "ID: ME"
-                                              : "ID: ${onemsg.name}"),
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                                top: 10, bottom: 10),
-                                            child: Text(
-                                                "Message: ${onemsg.message}",
-                                                style: const TextStyle(
-                                                    fontSize: 17)),
+                          children: [
+                            Container(
+                              child: const Text("Your Messages",
+                                  style: const TextStyle(fontSize: 20)),
+                            ),
+                            Column(
+                              children: msglist.map((onemsg) {
+                                return Container(
+                                    margin: EdgeInsets.only(
+                                      //if is my message, then it has margin 40 at left
+                                      left: onemsg.name == localName ? 40 : 0,
+                                      right: onemsg.name == localName
+                                          ? 0
+                                          : 40, //else margin at right
+                                    ),
+                                    child: Card(
+                                        color: onemsg.name == localName
+                                            ? Colors.blue[100]
+                                            : Colors.red[100],
+                                        //if its my message then, blue background else red background
+                                        child: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(15),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(onemsg.name == localName
+                                                  ? "ID: ME"
+                                                  : "ID: ${onemsg.name}"),
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                    top: 10, bottom: 10),
+                                                child: Text(
+                                                    "Message: ${onemsg.message}",
+                                                    style: const TextStyle(
+                                                        fontSize: 17)),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
-                                    )));
-                          }).toList(),
-                        )
-                      ],
-                    )))),
+                                        )));
+                              }).toList(),
+                            )
+                          ],
+                        )))),
             Positioned(
               //position text field at bottom of screen
               bottom: 0, left: 0, right: 0,
@@ -194,11 +199,12 @@ class ChatPageState extends State<ChatPage> {
                                 if (localName == "") {
                                   setState(() {
                                     localName = msgtext.text;
-                                    msgtext.text = "";
                                   });
+                                  sendmsg(msgtext.text);
+                                } else {
+                                  sendmsg(msgtext.text);
                                 }
-                                sendmsg(
-                                    msgtext.text); //send message with webspcket
+                                msgtext.text = "";
                               } else {
                                 print("Enter message");
                               }
